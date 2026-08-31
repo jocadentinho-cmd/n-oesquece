@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Rotas de SPA - evita erro 404 ao acessar diretamente /profissionais, /contato, etc.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

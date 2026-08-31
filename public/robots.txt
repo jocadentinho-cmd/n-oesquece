@@ -1,0 +1,6 @@
+# NÃO ESQUECE
+User-agent: *
+Allow: /
+Disallow: /configuracoes
+
+Sitemap: https://SEU-SITE.netlify.app/sitemap.xml

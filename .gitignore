@@ -1,0 +1,23 @@
+# Dependências
+node_modules/
+
+# Build de produção
+dist/
+dist-ssr/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Arquivos de ambiente (NUNCA versionar secrets)
+.env
+.env.local
+.env.*.local
+
+# Arquivos do VS Code / editores
+.vscode/
+.idea/
+.DS_Store
+
+# Temporário
+preview.log
