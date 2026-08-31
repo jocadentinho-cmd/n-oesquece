@@ -20,9 +20,9 @@ export default function BottomNavigation() {
         <span>Tarefas</span>
       </NavLink>
 
-      <NavLink to="/rotina" className={({ isActive }) => 'bn-item' + (isActive ? ' is-active' : '')}>
-        <span className="bn-item__icon" aria-hidden="true">🔁</span>
-        <span>Rotina</span>
+      <NavLink to="/calendario" className={({ isActive }) => 'bn-item' + (isActive ? ' is-active' : '')}>
+        <span className="bn-item__icon" aria-hidden="true">📅</span>
+        <span>Calendário</span>
       </NavLink>
 
       <NavLink to="/configuracoes" className={({ isActive }) => 'bn-item' + (isActive ? ' is-active' : '')}>

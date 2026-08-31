@@ -8,6 +8,9 @@ export function UIProvider({ children }) {
   const [modalTask, setModalTask] = useState(null)
   const [focusTask, setFocusTask] = useState(null)
   const [forgotOpen, setForgotOpen] = useState(false)
+  const [eventModalOpen, setEventModalOpen] = useState(false)
+  const [eventModalDate, setEventModalDate] = useState(null)
+  const [eventModalEvent, setEventModalEvent] = useState(null)
 
   const toast = useCallback((message, type = 'success') => {
     const id = Date.now() + '-' + Math.random().toString(36).slice(2, 6)
@@ -30,6 +33,18 @@ export function UIProvider({ children }) {
   const openForgot = useCallback(() => setForgotOpen(true), [])
   const closeForgot = useCallback(() => setForgotOpen(false), [])
 
+  const openEventModal = useCallback((dateISO = null, event = null) => {
+    setEventModalDate(dateISO)
+    setEventModalEvent(event)
+    setEventModalOpen(true)
+  }, [])
+
+  const closeEventModal = useCallback(() => {
+    setEventModalOpen(false)
+    setEventModalDate(null)
+    setEventModalEvent(null)
+  }, [])
+
   const value = useMemo(
     () => ({
       toasts,
@@ -43,8 +58,13 @@ export function UIProvider({ children }) {
       forgotOpen,
       openForgot,
       closeForgot,
+      eventModalOpen,
+      eventModalDate,
+      eventModalEvent,
+      openEventModal,
+      closeEventModal,
     }),
-    [toasts, toast, modalOpen, modalTask, focusTask, forgotOpen]
+    [toasts, toast, modalOpen, modalTask, focusTask, forgotOpen, eventModalOpen, eventModalDate, eventModalEvent]
   )
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>

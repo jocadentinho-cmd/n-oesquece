@@ -6,6 +6,7 @@ import './styles/theme.css'
 import './styles/layout.css'
 import './styles/components.css'
 import './styles/pages.css'
+import './styles/calendar.css'
 import './styles/responsive.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(

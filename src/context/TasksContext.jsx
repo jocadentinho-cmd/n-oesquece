@@ -5,12 +5,14 @@ const TasksContext = createContext(null)
 
 export function TasksProvider({ children }) {
   const [tasks, setTasks] = useState([])
+  const [events, setEvents] = useState([])
   const [routine, setRoutine] = useState({ morning: [], school: [], night: [] })
   const [settings, setSettings] = useState({})
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     setTasks(taskService.listTasks())
+    setEvents(taskService.listEvents())
     setRoutine(taskService.listRoutine())
     setSettings(taskService.getSettings())
     setLoaded(true)
@@ -19,6 +21,10 @@ export function TasksProvider({ children }) {
   useEffect(() => {
     if (loaded) taskService.saveTasks(tasks)
   }, [tasks, loaded])
+
+  useEffect(() => {
+    if (loaded) taskService.saveEvents(events)
+  }, [events, loaded])
 
   useEffect(() => {
     if (loaded) taskService.saveRoutine(routine)
@@ -55,9 +61,27 @@ export function TasksProvider({ children }) {
     setTasks(taskService.listTasks())
   }
 
+  const addEvent = (data) => {
+    const e = taskService.createEvent(data)
+    setEvents(taskService.listEvents())
+    return e
+  }
+
+  const updateEvent = (id, patch) => {
+    const e = taskService.updateEvent(id, patch)
+    setEvents(taskService.listEvents())
+    return e
+  }
+
+  const deleteEvent = (id) => {
+    taskService.deleteEvent(id)
+    setEvents(taskService.listEvents())
+  }
+
   const value = useMemo(
     () => ({
       tasks,
+      events,
       routine,
       settings,
       setRoutine,
@@ -67,9 +91,12 @@ export function TasksProvider({ children }) {
       deleteTask,
       completeTask,
       reuseTask,
+      addEvent,
+      updateEvent,
+      deleteEvent,
       loaded,
     }),
-    [tasks, routine, settings, loaded]
+    [tasks, events, routine, settings, loaded]
   )
 
   return <TasksContext.Provider value={value}>{children}</TasksContext.Provider>

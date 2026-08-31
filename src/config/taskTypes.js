@@ -31,3 +31,17 @@ export const FORGET_RISK = {
   medium: 'medium',
   high: 'high',
 }
+
+export const EVENT_COLORS = [
+  { key: 'primary', label: 'Roxo', hex: '#7c5cff' },
+  { key: 'blue', label: 'Azul', hex: '#4f8bff' },
+  { key: 'green', label: 'Verde', hex: '#2fe6a7' },
+  { key: 'amber', label: 'Amarelo', hex: '#ffc53d' },
+  { key: 'red', label: 'Vermelho', hex: '#ff5d6c' },
+  { key: 'cyan', label: 'Ciano', hex: '#40d4ff' },
+  { key: 'pink', label: 'Rosa', hex: '#ff6bb5' },
+]
+
+export function eventColor(key) {
+  return EVENT_COLORS.find((c) => c.key === key) || EVENT_COLORS[0]
+}

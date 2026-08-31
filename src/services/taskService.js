@@ -8,6 +8,7 @@
 
 const KEYS = {
   tasks: 'naoesquece.tasks.v1',
+  events: 'naoesquece.events.v1',
   routine: 'naoesquece.routine.v1',
   settings: 'naoesquece.settings.v1',
 }
@@ -113,5 +114,45 @@ export const taskService = {
   },
   saveSettings(settings) {
     write(KEYS.settings, settings)
+  },
+
+  // ---------- Eventos (calendário) ----------
+  listEvents() {
+    return read(KEYS.events, [])
+  },
+  saveEvents(events) {
+    write(KEYS.events, events)
+  },
+  getEvent(id) {
+    return this.listEvents().find((e) => e.id === id) || null
+  },
+  createEvent(data) {
+    const events = this.listEvents()
+    const event = {
+      id: uid(),
+      title: data.title || '',
+      description: data.description || '',
+      date: data.date || null,
+      time: data.time || null,
+      location: data.location || null,
+      color: data.color || 'primary',
+      allDay: data.allDay !== false,
+      createdAt: new Date().toISOString(),
+    }
+    events.push(event)
+    this.saveEvents(events)
+    return event
+  },
+  updateEvent(id, patch) {
+    const events = this.listEvents()
+    const idx = events.findIndex((e) => e.id === id)
+    if (idx === -1) return null
+    events[idx] = { ...events[idx], ...patch }
+    this.saveEvents(events)
+    return events[idx]
+  },
+  deleteEvent(id) {
+    const events = this.listEvents().filter((e) => e.id !== id)
+    this.saveEvents(events)
   },
 }

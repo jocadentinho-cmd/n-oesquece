@@ -23,6 +23,10 @@ const MONTHS = [
   'dezembro',
 ]
 
+const WEEKDAYS_SHORT = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+
+export const DATE_GRID_COLUMNS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+
 export function todayISO() {
   const d = new Date()
   return toISODate(d)
@@ -102,4 +106,68 @@ export function relativeDay(iso) {
   if (iso === today) return 'hoje'
   if (iso === tomorrow) return 'amanhã'
   return weekdayName(iso)
+}
+
+// ---------- Calendário ----------
+export function monthName(monthIndex) {
+  return MONTHS[monthIndex] || ''
+}
+
+export function monthNameShort(monthIndex) {
+  return monthName(monthIndex).slice(0, 3)
+}
+
+export function weekdayShort(dayIndex) {
+  return WEEKDAYS_SHORT[dayIndex] || ''
+}
+
+/**
+ * Gera a grade de um mês (6x7 ou menos). Retorna um array de
+ * objetos { iso, day, inMonth } cobrindo o grid a partir do domingo.
+ * includeAdjacent: inclui dias do mês anterior/seguinte pra preencher.
+ */
+export function buildMonthGrid(year, monthIndex) {
+  const first = new Date(year, monthIndex, 1)
+  const startWeekday = first.getDay() // 0 = domingo
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate()
+  const cells = []
+
+  for (let i = 0; i < startWeekday; i++) {
+    const d = new Date(year, monthIndex, 1 - (startWeekday - i))
+    cells.push({ iso: toISODate(d), day: d.getDate(), inMonth: false })
+  }
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push({ iso: toISODate(new Date(year, monthIndex, day)), day, inMonth: true })
+  }
+  const total = cells.length
+  const remainder = total % 7
+  if (remainder !== 0) {
+    const extra = 7 - remainder
+    for (let i = 1; i <= extra; i++) {
+      const d = new Date(year, monthIndex, daysInMonth + i)
+      cells.push({ iso: toISODate(d), day: d.getDate(), inMonth: false })
+    }
+  }
+  return cells
+}
+
+/**
+ * Formata uma data ISO para a timeline, ex.: "Hoje · 15:00" ou "Ter, 12 mar".
+ */
+export function formatEventDate(iso, time) {
+  const today = todayISO()
+  const tomorrow = addDaysISO(1)
+  const d = parseISODate(iso)
+  let label
+  if (iso === today) label = 'Hoje'
+  else if (iso === tomorrow) label = 'Amanhã'
+  else label = `${capitalize(weekdayName(iso))}, ${d.getDate()} ${monthNameShort(d.getMonth())}`
+  if (time) label += ` · ${time}`
+  return label
+}
+
+export function fullDateLabel(iso) {
+  const d = parseISODate(iso)
+  if (!d) return ''
+  return `${capitalize(weekdayName(iso))}, ${d.getDate()} de ${monthName(d.getMonth())}`
 }

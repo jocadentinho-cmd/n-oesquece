@@ -4,6 +4,7 @@ import { useUI } from '../context/UIContext'
 const ITEMS = [
   { to: '/hoje', label: 'Hoje', icon: '🏠' },
   { to: '/tarefas', label: 'Tarefas', icon: '📋' },
+  { to: '/calendario', label: 'Calendário', icon: '📅' },
   { to: '/rotina', label: 'Rotina', icon: '🔁' },
   { to: '/historico', label: 'Histórico', icon: '📊' },
   { to: '/configuracoes', label: 'Configurações', icon: '⚙️' },

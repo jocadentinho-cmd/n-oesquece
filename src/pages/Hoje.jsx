@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useTasks } from '../context/TasksContext'
 import { useUI } from '../context/UIContext'
 import QuickAdd from '../components/QuickAdd'
@@ -6,12 +7,13 @@ import TaskCard from '../components/TaskCard'
 import CategoryBadge from '../components/CategoryBadge'
 import EmptyState from '../components/EmptyState'
 import LoadingState from '../components/LoadingState'
-import { greeting, todayISO, formatDue } from '../utils/date'
+import { eventColor } from '../config/taskTypes'
+import { greeting, todayISO, formatDue, formatEventDate } from '../utils/date'
 
 const PRIORITY_RANK = { important: 3, normal: 2, calm: 1 }
 
 export default function Hoje() {
-  const { tasks, routine, loaded } = useTasks()
+  const { tasks, events, routine, loaded } = useTasks()
   const { openTaskModal, setFocusTask } = useUI()
   const today = todayISO()
 
@@ -39,6 +41,18 @@ export default function Hoje() {
   )
 
   const nightRoutine = routine.night || []
+
+  const upcomingEvents = useMemo(
+    () =>
+      events
+        .filter((e) => e.date && e.date >= today)
+        .sort((a, b) => {
+          if (a.date === b.date) return (a.time || '').localeCompare(b.time || '')
+          return a.date.localeCompare(b.date)
+        })
+        .slice(0, 5),
+    [events, today]
+  )
 
   const handleStart = () => {
     if (nowTask) setFocusTask(nowTask)
@@ -137,6 +151,30 @@ export default function Hoje() {
                   </li>
                 ))}
               </ul>
+            </section>
+          )}
+
+          {upcomingEvents.length > 0 && (
+            <section className="today-section">
+              <h2 className="today-section__title">🕒 PRÓXIMOS EVENTOS</h2>
+              <ol className="timeline">
+                {upcomingEvents.map((e) => (
+                  <li className="timeline__item" key={e.id}>
+                    <span
+                      className="timeline__dot"
+                      style={{ background: eventColor(e.color).hex }}
+                    />
+                    <div className="timeline__content">
+                      <span className="timeline__date">{formatEventDate(e.date, e.time)}</span>
+                      <strong className="timeline__title">{e.title}</strong>
+                      {e.location && <span className="timeline__meta">📍 {e.location}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <Link to="/calendario" className="cal-today" style={{ marginTop: 4 }}>
+                Ver calendário completo →
+              </Link>
             </section>
           )}
         </>
