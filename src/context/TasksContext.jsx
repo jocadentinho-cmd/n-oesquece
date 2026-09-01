@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { taskService } from '../services/taskService'
+import { generateProfile } from '../services/onboardingService'
 
 const TasksContext = createContext(null)
 
@@ -8,6 +9,7 @@ export function TasksProvider({ children }) {
   const [events, setEvents] = useState([])
   const [routine, setRoutine] = useState({ morning: [], school: [], night: [] })
   const [settings, setSettings] = useState({})
+  const [onboarding, setOnboarding] = useState(null)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -15,6 +17,7 @@ export function TasksProvider({ children }) {
     setEvents(taskService.listEvents())
     setRoutine(taskService.listRoutine())
     setSettings(taskService.getSettings())
+    setOnboarding(taskService.getOnboarding())
     setLoaded(true)
   }, [])
 
@@ -78,12 +81,41 @@ export function TasksProvider({ children }) {
     setEvents(taskService.listEvents())
   }
 
+  const finishOnboarding = (answers) => {
+    const profile = generateProfile(answers)
+    // mescla rotina gerada com a já existente (se houver)
+    const mergedRoutine = { morning: [], school: [], night: [] }
+    ;['morning', 'school', 'night'].forEach((s) => {
+      mergedRoutine[s] = profile.routine[s]
+    })
+    setRoutine(mergedRoutine)
+
+    // cria tarefas iniciais
+    profile.tasks.forEach((t) => taskService.createTask(t))
+    setTasks(taskService.listTasks())
+
+    // preferências
+    const newSettings = { ...settings, ...profile.settings }
+    setSettings(newSettings)
+
+    const saved = { answers, doneAt: new Date().toISOString() }
+    setOnboarding(saved)
+    taskService.saveOnboarding(saved)
+    return saved
+  }
+
+  const resetOnboarding = () => {
+    setOnboarding(null)
+    taskService.clearOnboarding()
+  }
+
   const value = useMemo(
     () => ({
       tasks,
       events,
       routine,
       settings,
+      onboarding,
       setRoutine,
       setSettings,
       addTask,
@@ -94,9 +126,11 @@ export function TasksProvider({ children }) {
       addEvent,
       updateEvent,
       deleteEvent,
+      finishOnboarding,
+      resetOnboarding,
       loaded,
     }),
-    [tasks, events, routine, settings, loaded]
+    [tasks, events, routine, settings, onboarding, loaded]
   )
 
   return <TasksContext.Provider value={value}>{children}</TasksContext.Provider>

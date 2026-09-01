@@ -11,6 +11,7 @@ const KEYS = {
   events: 'naoesquece.events.v1',
   routine: 'naoesquece.routine.v1',
   settings: 'naoesquece.settings.v1',
+  onboarding: 'naoesquece.onboarding.v1',
 }
 
 function read(key, fallback) {
@@ -156,5 +157,16 @@ export const taskService = {
   deleteEvent(id) {
     const events = this.listEvents().filter((e) => e.id !== id)
     this.saveEvents(events)
+  },
+
+  // ---------- Onboarding (perfil do usuário) ----------
+  getOnboarding() {
+    return read(KEYS.onboarding, null)
+  },
+  saveOnboarding(profile) {
+    write(KEYS.onboarding, profile)
+  },
+  clearOnboarding() {
+    localStorage.removeItem(KEYS.onboarding)
   },
 }

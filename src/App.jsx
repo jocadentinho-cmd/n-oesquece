@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { TasksProvider } from './context/TasksContext'
+import { TasksProvider, useTasks } from './context/TasksContext'
 import { UIProvider } from './context/UIContext'
 
 import Sidebar from './components/Sidebar'
@@ -10,6 +10,7 @@ import ForgotModal from './components/ForgotModal'
 import Toasts from './components/Toasts'
 import FocusMode from './components/FocusMode'
 import ReminderScheduler from './components/ReminderScheduler'
+import Onboarding from './components/Onboarding'
 
 import Hoje from './pages/Hoje'
 import Tarefas from './pages/Tarefas'
@@ -19,35 +20,47 @@ import Configuracoes from './pages/Configuracoes'
 import Calendario from './pages/Calendario'
 import NotFound from './pages/NotFound'
 
+function AppContent() {
+  const { loaded, onboarding } = useTasks()
+
+  if (!loaded || onboarding === null) {
+    return <Onboarding />
+  }
+
+  return (
+    <UIProvider>
+      <BrowserRouter>
+        <div className="app-shell">
+          <Sidebar />
+          <main className="app-main">
+            <Routes>
+              <Route path="/" element={<Navigate to="/hoje" replace />} />
+              <Route path="/hoje" element={<Hoje />} />
+              <Route path="/tarefas" element={<Tarefas />} />
+              <Route path="/calendario" element={<Calendario />} />
+              <Route path="/rotina" element={<Rotina />} />
+              <Route path="/historico" element={<Historico />} />
+              <Route path="/configuracoes" element={<Configuracoes />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          <BottomNavigation />
+          <TaskModal />
+          <EventModal />
+          <ForgotModal />
+          <Toasts />
+          <FocusMode />
+          <ReminderScheduler />
+        </div>
+      </BrowserRouter>
+    </UIProvider>
+  )
+}
+
 export default function App() {
   return (
     <TasksProvider>
-      <UIProvider>
-        <BrowserRouter>
-          <div className="app-shell">
-            <Sidebar />
-            <main className="app-main">
-              <Routes>
-                <Route path="/" element={<Navigate to="/hoje" replace />} />
-                <Route path="/hoje" element={<Hoje />} />
-                <Route path="/tarefas" element={<Tarefas />} />
-                <Route path="/calendario" element={<Calendario />} />
-                <Route path="/rotina" element={<Rotina />} />
-                <Route path="/historico" element={<Historico />} />
-                <Route path="/configuracoes" element={<Configuracoes />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <BottomNavigation />
-            <TaskModal />
-            <EventModal />
-            <ForgotModal />
-            <Toasts />
-            <FocusMode />
-            <ReminderScheduler />
-          </div>
-        </BrowserRouter>
-      </UIProvider>
+      <AppContent />
     </TasksProvider>
   )
 }

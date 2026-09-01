@@ -8,6 +8,7 @@ import './styles/components.css'
 import './styles/pages.css'
 import './styles/calendar.css'
 import './styles/responsive.css'
+import './styles/onboarding.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
