@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useUI } from '../context/UIContext'
 import { useTasks } from '../context/TasksContext'
 import { CATEGORIES, PRIORITIES, RECURRENCE } from '../config/taskTypes'
+import { CONTEXTS } from '../services/taskService'
 import { addDaysISO, todayISO} from '../utils/date'
 
 const WHEN = [
@@ -10,6 +11,15 @@ const WHEN = [
   { key: 'week', label: 'Esta semana' },
   { key: 'date', label: 'Escolher data' },
 ]
+
+const CONTEXT_LABELS = {
+  casa: '🏠 Casa',
+  escola: '🏫 Escola',
+  trabalho: '💼 Trabalho',
+  academia: '🏋 Academia',
+  rua: '🚶 Rua',
+  computador: '💻 Computador',
+}
 
 export default function TaskModal() {
   const { modalOpen, modalTask, closeTaskModal, toast } = useUI()
@@ -23,6 +33,7 @@ export default function TaskModal() {
   const [priority, setPriority] = useState('normal')
   const [nextStep, setNextStep] = useState('')
   const [recurrence, setRecurrence] = useState('none')
+  const [context, setContext] = useState('')
 
   const titleRef = useRef(null)
 
@@ -36,6 +47,7 @@ export default function TaskModal() {
         setPriority(modalTask.priority || 'normal')
         setNextStep(modalTask.nextStep || '')
         setRecurrence(modalTask.recurrence || 'none')
+        setContext(modalTask.context || '')
         setWhen(modalTask.dueDate ? 'date' : 'today')
       } else {
         setTitle('')
@@ -46,6 +58,7 @@ export default function TaskModal() {
         setPriority('normal')
         setNextStep('')
         setRecurrence('none')
+        setContext('')
       }
       setTimeout(() => titleRef.current && titleRef.current.focus(), 60)
     }
@@ -77,6 +90,7 @@ export default function TaskModal() {
         priority,
         nextStep: nextStep.trim() || null,
         recurrence,
+        context: context || null,
       })
       toast('Atualizado!')
     } else {
@@ -88,6 +102,7 @@ export default function TaskModal() {
         priority,
         nextStep: nextStep.trim() || null,
         recurrence,
+        context: context || null,
         originalInput: '',
       })
       toast('Tá salvo. 💾')
@@ -186,6 +201,25 @@ export default function TaskModal() {
               aria-label="Próximo passo"
               onChange={(e) => setNextStep(e.target.value)}
             />
+          </fieldset>
+
+          <fieldset className="form-field">
+            <legend className="field-label">📍 Onde (opcional)</legend>
+            <div className="cell-row">
+              {CONTEXTS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={'cell' + (context === c ? ' is-active' : '')}
+                  onClick={() => setContext(context === c ? '' : c)}
+                >
+                  {CONTEXT_LABELS[c]}
+                </button>
+              ))}
+            </div>
+            {context && (
+              <p className="field-hint">Pra eu te lembrar na hora de sair. 🎒</p>
+            )}
           </fieldset>
 
           <fieldset className="form-field">

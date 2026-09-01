@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTasks } from '../context/TasksContext'
 import { useUI } from '../context/UIContext'
@@ -9,13 +9,32 @@ import EmptyState from '../components/EmptyState'
 import LoadingState from '../components/LoadingState'
 import { eventColor } from '../config/taskTypes'
 import { greeting, todayISO, formatDue, formatEventDate } from '../utils/date'
+import { FORGET_SCORE, CONTEXTS } from '../services/taskService'
 
 const PRIORITY_RANK = { important: 3, normal: 2, calm: 1 }
 
+const CONTEXT_LABELS = {
+  casa: '🏠 Casa',
+  escola: '🏫 Escola',
+  trabalho: '💼 Trabalho',
+  academia: '🏋 Academia',
+  rua: '🚶 Rua',
+  computador: '💻 Computador',
+}
+
+function defaultContext() {
+  const h = new Date().getHours()
+  if (h >= 6 && h < 12) return 'escola'
+  if (h >= 12 && h < 18) return 'trabalho'
+  return 'casa'
+}
+
 export default function Hoje() {
   const { tasks, events, routine, loaded } = useTasks()
-  const { openTaskModal, setFocusTask } = useUI()
+  const { openTaskModal, setFocusTask, toast } = useUI()
   const today = todayISO()
+  const [leaving, setLeaving] = useState('')
+  const [nightDone, setNightDone] = useState({})
 
   const pending = useMemo(() => tasks.filter((t) => t.status === 'pending'), [tasks])
 
@@ -36,11 +55,26 @@ export default function Hoje() {
   const moreLater = todayTasks.slice(1)
 
   const dontForget = useMemo(
-    () => pending.filter((t) => t.forgetRisk === 'high').slice(0, 4),
+    () =>
+      pending
+        .map((t) => ({ t, score: FORGET_SCORE.score(t) }))
+        .filter((x) => x.score >= 40)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map((x) => x.t),
     [pending]
   )
 
   const nightRoutine = routine.night || []
+  const nextDayRoutine = routine.school || []
+
+  const leavingTasks = useMemo(() => {
+    if (!leaving) return []
+    return pending
+      .filter((t) => t.context === leaving)
+      .concat(pending.filter((t) => !t.context && t.category === leaving))
+      .slice(0, 6)
+  }, [pending, leaving])
 
   const upcomingEvents = useMemo(
     () =>
@@ -56,6 +90,14 @@ export default function Hoje() {
 
   const handleStart = () => {
     if (nowTask) setFocusTask(nowTask)
+  }
+
+  const handleLeave = (ctx) => {
+    setLeaving(ctx)
+  }
+
+  const toggleNight = (id) => {
+    setNightDone((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
   return (
@@ -76,7 +118,8 @@ export default function Hoje() {
         <>
           {dontForget.length > 0 && (
             <section className="today-section today-section--warn">
-              <h2 className="today-section__title">⚠️ NÃO ESQUECER</h2>
+              <h2 className="today-section__title">⚠️ ANTES QUE VOCÊ ESQUEÇA</h2>
+              <p className="today-section__hint">Só o que realmente precisa de atenção.</p>
               <ul className="tasklist">
                 {dontForget.map((t) => (
                   <li key={t.id}><TaskCard task={t} /></li>
@@ -84,6 +127,30 @@ export default function Hoje() {
               </ul>
             </section>
           )}
+
+          <section className="today-section">
+            <h2 className="today-section__title">🎒 VOU SAIR</h2>
+            <p className="today-section__hint">Pra onde você vai? Eu verifico o que não pode faltar.</p>
+            <div className="cell-row">
+              {CONTEXTS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={'cell' + (leaving === c ? ' is-active' : '')}
+                  onClick={() => handleLeave(leaving === c ? '' : c)}
+                >
+                  {CONTEXT_LABELS[c]}
+                </button>
+              ))}
+            </div>
+            {leavingTasks.length > 0 && (
+              <ul className="tasklist" style={{ marginTop: 12 }}>
+                {leavingTasks.map((t) => (
+                  <li key={t.id}><TaskCard task={t} /></li>
+                ))}
+              </ul>
+            )}
+          </section>
 
           {pending.length === 0 ? (
             <EmptyState
@@ -143,14 +210,35 @@ export default function Hoje() {
           {nightRoutine.length > 0 && (
             <section className="today-section">
               <h2 className="today-section__title">🌙 ANTES DE DORMIR</h2>
+              <p className="today-section__hint">Vamos garantir que amanhã não vire correria?</p>
               <ul className="routine-inline">
-                {nightRoutine.map((item) => (
-                  <li className="routine-item" key={item.id}>
-                    <span className="routine-item__check">☐</span>
-                    <span>{item.label}</span>
-                  </li>
-                ))}
+                {nightRoutine.map((item) => {
+                  const checked = nightDone[item.id]
+                  return (
+                    <li
+                      className={'routine-item' + (checked ? ' is-done' : '')}
+                      key={item.id}
+                      onClick={() => toggleNight(item.id)}
+                    >
+                      <span className="routine-item__check">{checked ? '✓' : '☐'}</span>
+                      <span>{item.label}</span>
+                    </li>
+                  )
+                })}
               </ul>
+              {nextDayRoutine.length > 0 && (
+                <div className="tomorrow-preview">
+                  <h3 className="tomorrow-preview__title">Amanhã</h3>
+                  <ul className="routine-inline">
+                    {nextDayRoutine.slice(0, 5).map((item) => (
+                      <li className="routine-item" key={item.id}>
+                        <span className="routine-item__check">☐</span>
+                        <span>{item.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </section>
           )}
 

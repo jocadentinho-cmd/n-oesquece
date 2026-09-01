@@ -251,6 +251,66 @@
   padding: 6px 16px;
 }
 
+/* ============ Novas seções da tela Hoje ============ */
+.today-section__hint {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: -8px;
+  margin-bottom: 12px;
+}
+
+.routine-item.is-done {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+
+.routine-item.is-done .routine-item__check {
+  background: var(--success);
+  border-color: var(--success);
+  color: var(--surface);
+}
+
+.tomorrow-preview {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.tomorrow-preview__title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.focus__finish {
+  text-align: center;
+  font-size: 16px;
+  color: var(--success);
+  margin: 16px 0;
+}
+
+.risk-pill {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 13px;
+}
+
+.risk-pill--text {
+  width: auto;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--warning);
+  background: rgba(255, 197, 61, 0.12);
+}
+
 .day-select {
   display: flex;
   gap: 8px;

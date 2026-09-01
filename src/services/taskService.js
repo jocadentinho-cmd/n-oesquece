@@ -40,6 +40,35 @@ function uid() {
   return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)
 }
 
+export const CONTEXTS = ['casa', 'escola', 'trabalho', 'academia', 'rua', 'computador']
+
+export const FORGET_SCORE = {
+  score(task) {
+    let score = 0
+    if (!task) return 0
+    if (task.priority === 'important') score += 25
+    if (task.forgetRisk === 'high') score += 25
+    if (task.forgetRisk === 'medium') score += 12
+    if (task.snoozeCount && task.snoozeCount >= 2) score += 20
+    else if (task.snoozeCount && task.snoozeCount >= 1) score += 10
+    if (task.dueDate && task.dueDate < new Date().toISOString().slice(0, 10)) score += 30
+    if (task.dueDate && !task.dueTime) score += 8
+    if (Array.isArray(task.steps) && task.steps.length > 0) score += 10
+    if (task.context && CONTEXTS.includes(task.context)) score += 5
+    return Math.min(100, score)
+  },
+  level(score) {
+    if (score >= 60) return 'high'
+    if (score >= 30) return 'medium'
+    return 'low'
+  },
+  label(score) {
+    if (score >= 60) return { emoji: '🔴', text: 'Melhor não depender da memória' }
+    if (score >= 30) return { emoji: '🟡', text: 'Vale lembrar' }
+    return { emoji: '🟢', text: 'Tudo tranquilo' }
+  },
+}
+
 export const taskService = {
   listTasks() {
     return read(KEYS.tasks, [])
@@ -73,6 +102,9 @@ export const taskService = {
       completedAt: null,
       snoozes: data.snoozes || [],
       steps: data.steps || [],
+      afterTaskId: data.afterTaskId || null,
+      quick5: data.quick5 || false,
+      firstStep: data.firstStep || null,
     }
     tasks.unshift(task)
     this.saveTasks(tasks)
@@ -169,4 +201,36 @@ export const taskService = {
   clearOnboarding() {
     localStorage.removeItem(KEYS.onboarding)
   },
+
+  // ---------- Radar de esquecimento ----------
+  // "Lembrar" (bump): traz a tarefa para hoje/horário próximo e sobe o risco,
+  // para que ela apareça em "ANTES QUE VOCÊ ESQUEÇA".
+  bump(id) {
+    const tasks = this.listTasks()
+    const idx = tasks.findIndex((t) => t.id === id)
+    if (idx === -1) return null
+    const t = tasks[idx]
+    const today = new Date().toISOString().slice(0, 10)
+    let score = FORGET_SCORE.score(t)
+    tasks[idx] = {
+      ...t,
+      dueDate: t.dueDate && t.dueDate >= today ? t.dueDate : today,
+      dueTime: t.dueTime || defaultDueTime(),
+      forgetRisk: score >= 30 ? FORGET_SCORE.level(score) : 'medium',
+      status: 'pending',
+    }
+    this.saveTasks(tasks)
+    return tasks[idx]
+  },
+  listContextTasks(context) {
+    if (!context) return []
+    return this.listTasks().filter((t) => t.status === 'pending' && t.context === context)
+  },
+}
+
+function defaultDueTime() {
+  const h = new Date().getHours()
+  if (h < 12) return '12:00'
+  if (h < 18) return '18:00'
+  return '21:00'
 }

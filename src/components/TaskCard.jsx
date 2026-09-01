@@ -5,10 +5,11 @@ import PriorityBadge from './PriorityBadge'
 import CategoryBadge from './CategoryBadge'
 import SnoozeDialog from './SnoozeDialog'
 import { formatDue } from '../utils/date'
+import { FORGET_SCORE } from '../services/taskService'
 
 export default function TaskCard({ task }) {
-  const { completeTask, deleteTask, reuseTask } = useTasks()
-  const { openTaskModal, toast } = useUI()
+  const { completeTask, deleteTask, reuseTask, bumpTask, updateTask } = useTasks()
+  const { openTaskModal, toast, setFocusTask } = useUI()
   const [snoozing, setSnoozing] = useState(false)
 
   const isDone = task.status === 'done'
@@ -16,6 +17,9 @@ export default function TaskCard({ task }) {
     !isDone &&
     task.dueDate &&
     task.dueDate < new Date().toISOString().slice(0, 10)
+
+  const forget = FORGET_SCORE.score(task)
+  const risk = FORGET_SCORE.label(forget)
 
   const handleComplete = () => {
     if (isDone) {
@@ -35,6 +39,18 @@ export default function TaskCard({ task }) {
     toast('Tarefa excluída.', 'warning')
   }
 
+  const handleRemind = (e) => {
+    e.stopPropagation()
+    bumpTask(task.id)
+    toast('Tá. Vou lembrar você. 🔔')
+  }
+
+  const handleQuick5 = (e) => {
+    e.stopPropagation()
+    updateTask(task.id, { quick5: true })
+    setFocusTask({ ...task, quick5: true })
+  }
+
   return (
     <article className={'task-card' + (isDone ? ' is-done' : '') + (overdue ? ' is-overdue' : '')}>
       <button
@@ -50,6 +66,9 @@ export default function TaskCard({ task }) {
         <div className="task-card__top">
           <PriorityBadge priority={task.priority} />
           <CategoryBadge category={task.category} />
+          {!isDone && (task.forgetRisk === 'high' || forget >= 60) ? (
+            <span className="risk-pill" title={risk.text}>{risk.emoji}</span>
+          ) : null}
         </div>
         <h3 className="task-card__title">{task.title}</h3>
         {task.nextStep && !isDone && (
@@ -64,10 +83,29 @@ export default function TaskCard({ task }) {
           {task.snoozeCount > 0 && !isDone && (
             <span className="task-card__snooze">😴 {task.snoozeCount}x</span>
           )}
+          {!isDone && task.snoozeCount >= 2 && (
+            <span className="risk-pill risk-pill--text">👀 adia bastante</span>
+          )}
         </div>
       </div>
 
       <div className="task-card__actions">
+        {!isDone && (
+          <>
+            <button
+              className="icon-btn"
+              onClick={handleQuick5}
+              aria-label="Fazer por 5 minutos"
+              title="Só 5 minutos"
+            >⏱5</button>
+            <button
+              className="icon-btn"
+              onClick={handleRemind}
+              aria-label="Me lembrar"
+              title="Lembrar"
+            >🔔</button>
+          </>
+        )}
         {!isDone && (
           <button
             className="icon-btn"

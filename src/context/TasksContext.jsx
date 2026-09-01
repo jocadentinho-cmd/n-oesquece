@@ -64,6 +64,11 @@ export function TasksProvider({ children }) {
     setTasks(taskService.listTasks())
   }
 
+  const bumpTask = (id) => {
+    taskService.bump(id)
+    setTasks(taskService.listTasks())
+  }
+
   const addEvent = (data) => {
     const e = taskService.createEvent(data)
     setEvents(taskService.listEvents())
@@ -123,6 +128,7 @@ export function TasksProvider({ children }) {
       deleteTask,
       completeTask,
       reuseTask,
+      bumpTask,
       addEvent,
       updateEvent,
       deleteEvent,

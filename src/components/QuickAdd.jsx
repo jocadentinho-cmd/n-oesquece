@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useUI } from '../context/UIContext'
 import { interpret } from '../services/parser'
 import { useTasks } from '../context/TasksContext'
@@ -6,8 +6,21 @@ import { useTasks } from '../context/TasksContext'
 export default function QuickAdd() {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState(null)
+  const inputRef = useRef(null)
   const { addTask, toast } = useTasks()
   const { toast: notify } = useUI()
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      if (e.key === '*' || e.key === '/') {
+        e.preventDefault()
+        inputRef.current && inputRef.current.focus()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -66,6 +79,7 @@ export default function QuickAdd() {
     <form className="quickadd" onSubmit={handleSubmit}>
       <span className="quickadd__plus" aria-hidden="true">＋</span>
       <input
+        ref={inputRef}
         className="quickadd__input"
         type="text"
         value={text}
