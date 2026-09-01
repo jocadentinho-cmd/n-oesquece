@@ -16,8 +16,10 @@ import {
 
 const SHORT_DAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 
+const TASK_DOT_COLOR = '#4f8bff'
+
 export default function Calendario() {
-  const { events, loaded } = useTasks()
+  const { events, tasks, loaded } = useTasks()
   const { openEventModal } = useUI()
 
   const now = new Date()
@@ -38,12 +40,28 @@ export default function Calendario() {
     return map
   }, [events])
 
+  const dueTasksByDate = useMemo(() => {
+    const map = {}
+    for (const t of tasks) {
+      if (t.status === 'pending' && t.dueDate) {
+        if (!map[t.dueDate]) map[t.dueDate] = []
+        map[t.dueDate].push(t)
+      }
+    }
+    return map
+  }, [tasks])
+
   const cells = useMemo(() => buildMonthGrid(year, month), [year, month])
 
   const selectedEvents = useMemo(() => {
     const list = eventsByDate[selected] || []
     return list.slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''))
   }, [eventsByDate, selected])
+
+  const selectedTasks = useMemo(() => {
+    const list = dueTasksByDate[selected] || []
+    return list.slice().sort((a, b) => (a.dueTime || '').localeCompare(b.dueTime || ''))
+  }, [dueTasksByDate, selected])
 
   const upcoming = useMemo(() => {
     return events
@@ -53,6 +71,15 @@ export default function Calendario() {
         return a.date.localeCompare(b.date)
       })
   }, [events, today])
+
+  const upcomingTasks = useMemo(() => {
+    return tasks
+      .filter((t) => t.status === 'pending' && t.dueDate && t.dueDate >= today)
+      .sort((a, b) => {
+        if (a.dueDate === b.dueDate) return (a.dueTime || '').localeCompare(b.dueTime || '')
+        return a.dueDate.localeCompare(b.dueDate)
+      })
+  }, [tasks, today])
 
   const eventDotColor = (iso) => {
     const list = eventsByDate[iso]
@@ -121,6 +148,8 @@ export default function Calendario() {
             <div className="cal-grid">
               {cells.map((c) => {
                 const dayEvts = eventsByDate[c.iso] || []
+                const dayTasks = dueTasksByDate[c.iso] || []
+                const hasAny = dayEvts.length > 0 || dayTasks.length > 0
                 const isToday = c.iso === today
                 const isSelected = c.iso === selected
                 return (
@@ -133,9 +162,9 @@ export default function Calendario() {
                       (c.inMonth ? '' : ' is-muted')
                     }
                     onClick={() => handleDayClick(c.iso, c.inMonth)}
-                    aria-label={dayEvts.length > 0 ? `Dia ${c.day}, ${dayEvts.length} evento(s)` : `Dia ${c.day}`}
+                    aria-label={hasAny ? `Dia ${c.day}, ${dayEvts.length + dayTasks.length} item(ns)` : `Dia ${c.day}`}
                   >
-                    {dayEvts.length > 0 && <span className="cal-day__badge" aria-hidden="true" />}
+                    {hasAny && <span className="cal-day__badge" aria-hidden="true" />}
                     <span className="cal-day__num">{c.day}</span>
                     <div className="cal-day__dots">
                       {dayEvts.slice(0, 3).map((e) => (
@@ -144,6 +173,14 @@ export default function Calendario() {
                           className="cal-dot"
                           style={{ background: eventColor(e.color).hex }}
                           title={e.title}
+                        />
+                      ))}
+                      {dayEvts.length <= 2 && dayTasks.slice(0, 3 - dayEvts.length).map((t) => (
+                        <span
+                          key={t.id}
+                          className="cal-dot"
+                          style={{ background: TASK_DOT_COLOR }}
+                          title={`📚 ${t.title}`}
                         />
                       ))}
                     </div>
@@ -167,35 +204,60 @@ export default function Calendario() {
               </button>
             </div>
 
-            {(!dayEvents || dayEvents.length === 0) ? (
+            {(!dayEvents || dayEvents.length === 0) && selectedTasks.length === 0 ? (
               <p className="page__sub" style={{ padding: '8px 2px' }}>
                 Nenhum evento nesse dia. Clique em "Novo" para criar.
               </p>
             ) : (
-              <ul className="event-list">
-                {selectedEvents.map((e) => (
-                  <li key={e.id}>
-                    <div className="event-chip" onClick={() => openEventModal(e.date, e)} role="button" tabIndex={0}>
-                      <span className="event-chip__bar" style={{ background: eventColor(e.color).hex }} />
-                      <div className="event-chip__body">
-                        <strong>{e.title}</strong>
-                        <span className="event-chip__meta">
-                          {e.allDay ? 'Dia inteiro' : (e.time || '')}
-                          {e.location ? ` · ${e.location}` : ''}
-                        </span>
-                        {e.reminder && (
-                          <span className="event-reminder-badge">🔔 {formatReminderLabel(e.reminder)}</span>
-                        )}
+              <>
+                <ul className="event-list">
+                  {selectedEvents.map((e) => (
+                    <li key={e.id}>
+                      <div className="event-chip" onClick={() => openEventModal(e.date, e)} role="button" tabIndex={0}>
+                        <span className="event-chip__bar" style={{ background: eventColor(e.color).hex }} />
+                        <div className="event-chip__body">
+                          <strong>{e.title}</strong>
+                          <span className="event-chip__meta">
+                            {e.allDay ? 'Dia inteiro' : (e.time || '')}
+                            {e.location ? ` · ${e.location}` : ''}
+                          </span>
+                          {e.reminder && (
+                            <span className="event-reminder-badge">🔔 {formatReminderLabel(e.reminder)}</span>
+                          )}
+                        </div>
+                        <button
+                          className="icon-btn"
+                          onClick={(ev) => { ev.stopPropagation(); openEventModal(e.date, e) }}
+                          aria-label="Editar evento"
+                        >✎</button>
                       </div>
-                      <button
-                        className="icon-btn"
-                        onClick={(ev) => { ev.stopPropagation(); openEventModal(e.date, e) }}
-                        aria-label="Editar evento"
-                      >✎</button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+
+                {selectedTasks.length > 0 && (
+                  <>
+                    <h3 className="today-section__title" style={{ marginTop: 16, marginBottom: 8 }}>📚 Tarefas</h3>
+                    <ul className="event-list">
+                      {selectedTasks.map((t) => (
+                        <li key={t.id}>
+                          <div className="event-chip" role="button" tabIndex={0}>
+                            <span className="event-chip__bar" style={{ background: TASK_DOT_COLOR }} />
+                            <div className="event-chip__body">
+                              <strong>{t.title}</strong>
+                              <span className="event-chip__meta">
+                                {t.dueTime ? t.dueTime : 'O dia todo'}
+                                {t.category ? ` · ${t.category}` : ''}
+                                {t.snoozeCount > 0 ? ` · 😴 ${t.snoozeCount}x` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </>
             )}
           </section>
 
@@ -222,6 +284,33 @@ export default function Calendario() {
                       <span className="timeline__date">{formatEventDate(e.date, e.time)}</span>
                       <strong className="timeline__title">{e.title}</strong>
                       {e.location && <span className="timeline__meta">📍 {e.location}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+
+          {/* ============ Timeline das próximas tarefas ============ */}
+          <section className="today-section">
+            <h2 className="today-section__title">📚 PRÓXIMAS TAREFAS</h2>
+            {upcomingTasks.length === 0 ? (
+              <p className="page__sub" style={{ padding: '8px 2px' }}>
+                Nenhuma tarefa com data de entrega por vir.
+              </p>
+            ) : (
+              <ol className="timeline timeline--tasks">
+                {upcomingTasks.slice(0, 12).map((t) => (
+                  <li className="timeline__item" key={t.id}>
+                    <span
+                      className="timeline__dot"
+                      style={{ background: TASK_DOT_COLOR }}
+                    />
+                    <div className="timeline__content">
+                      <span className="timeline__date">{formatEventDate(t.dueDate, t.dueTime)}</span>
+                      <strong className="timeline__title">{t.title}</strong>
+                      {t.category && <span className="timeline__meta">📚 {t.category}</span>}
+                      {t.snoozeCount > 0 && <span className="timeline__meta">😴 {t.snoozeCount}x</span>}
                     </div>
                   </li>
                 ))}

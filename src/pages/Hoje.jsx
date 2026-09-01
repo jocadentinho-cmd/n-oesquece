@@ -88,6 +88,18 @@ export default function Hoje() {
     [events, today]
   )
 
+  const upcomingTasks = useMemo(
+    () =>
+      pending
+        .filter((t) => t.dueDate && t.dueDate >= today)
+        .sort((a, b) => {
+          if (a.dueDate === b.dueDate) return (a.dueTime || '').localeCompare(b.dueTime || '')
+          return a.dueDate.localeCompare(b.dueDate)
+        })
+        .slice(0, 5),
+    [pending, today]
+  )
+
   const handleStart = () => {
     if (nowTask) setFocusTask(nowTask)
   }
@@ -256,6 +268,28 @@ export default function Hoje() {
                       <span className="timeline__date">{formatEventDate(e.date, e.time)}</span>
                       <strong className="timeline__title">{e.title}</strong>
                       {e.location && <span className="timeline__meta">📍 {e.location}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <Link to="/calendario" className="cal-today" style={{ marginTop: 4 }}>
+                Ver calendário completo →
+              </Link>
+            </section>
+          )}
+
+          {upcomingTasks.length > 0 && (
+            <section className="today-section">
+              <h2 className="today-section__title">📚 PRÓXIMAS TAREFAS</h2>
+              <ol className="timeline timeline--tasks">
+                {upcomingTasks.map((t) => (
+                  <li className="timeline__item" key={t.id}>
+                    <span className="timeline__dot" style={{ background: '#4f8bff' }} />
+                    <div className="timeline__content">
+                      <span className="timeline__date">{formatEventDate(t.dueDate, t.dueTime)}</span>
+                      <strong className="timeline__title">{t.title}</strong>
+                      {t.category && <span className="timeline__meta">📚 {t.category}</span>}
+                      {t.snoozeCount > 0 && <span className="timeline__meta">😴 {t.snoozeCount}x</span>}
                     </div>
                   </li>
                 ))}
