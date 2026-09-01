@@ -1,5 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { taskService } from '../services/taskService'
+import { authService } from '../services/authService'
+import { syncService } from '../services/syncService'
 import { generateProfile } from '../services/onboardingService'
 
 const TasksContext = createContext(null)
@@ -11,6 +13,11 @@ export function TasksProvider({ children }) {
   const [settings, setSettings] = useState({})
   const [onboarding, setOnboarding] = useState(null)
   const [loaded, setLoaded] = useState(false)
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [syncError, setSyncError] = useState('')
+  const syncedRef = useRef(false)
+  const pushTimer = useRef(null)
 
   useEffect(() => {
     setTasks(taskService.listTasks())
@@ -19,6 +26,50 @@ export function TasksProvider({ children }) {
     setSettings(taskService.getSettings())
     setOnboarding(taskService.getOnboarding())
     setLoaded(true)
+  }, [])
+
+  // Restaura a sessão e sincroniza ao logar
+  useEffect(() => {
+    let mounted = true
+    const boot = async () => {
+      const { session } = await authService.getSession()
+      if (!mounted) return
+      if (session && session.user) {
+        setUser(session.user)
+        const { error } = await syncService.syncOnLogin(session.user.id)
+        if (error) setSyncError('Falha ao sincronizar dados.')
+        if (mounted) {
+          setTasks(taskService.listTasks())
+          setEvents(taskService.listEvents())
+          setRoutine(taskService.listRoutine())
+          setSettings(taskService.getSettings())
+          setOnboarding(taskService.getOnboarding())
+          syncedRef.current = true
+        }
+      }
+      if (mounted) setAuthLoading(false)
+    }
+    boot()
+    const { data: sub } = authService.onAuthStateChange((session) => {
+      if (!mounted) return
+      setUser(session ? session.user : null)
+      if (session && session.user) {
+        syncService.syncOnLogin(session.user.id).then(({ error }) => {
+          if (mounted) {
+            setTasks(taskService.listTasks())
+            setEvents(taskService.listEvents())
+            setRoutine(taskService.listRoutine())
+            setSettings(taskService.getSettings())
+            setOnboarding(taskService.getOnboarding())
+            syncedRef.current = true
+          }
+        })
+      }
+    })
+    return () => {
+      mounted = false
+      if (sub && sub.subscription) sub.subscription.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {
@@ -36,6 +87,41 @@ export function TasksProvider({ children }) {
   useEffect(() => {
     if (loaded) taskService.saveSettings(settings)
   }, [settings, loaded])
+
+  // Empurra as mudanças para a nuvem (debounced) quando logado
+  useEffect(() => {
+    if (!loaded || !user) return
+    if (pushTimer.current) clearTimeout(pushTimer.current)
+    pushTimer.current = setTimeout(() => {
+      syncService.push(user.id).catch(() => setSyncError('Falha ao salvar na nuvem.'))
+    }, 800)
+    return () => clearTimeout(pushTimer.current)
+  }, [tasks, events, routine, settings, loaded, user])
+
+  const login = async (email, password) => {
+    setSyncError('')
+    const { error } = await authService.signIn(email, password)
+    if (error) {
+      setSyncError('Email ou senha incorretos.')
+      return { error }
+    }
+    return { error: null }
+  }
+
+  const signup = async (email, password) => {
+    setSyncError('')
+    const { data, error } = await authService.signUp(email, password)
+    if (error) {
+      setSyncError('Não deu pra criar a conta.')
+      return { error }
+    }
+    return { data, error: null }
+  }
+
+  const logout = async () => {
+    await authService.signOut()
+    setUser(null)
+  }
 
   const addTask = (data) => {
     const t = taskService.createTask(data)
@@ -121,6 +207,12 @@ export function TasksProvider({ children }) {
       routine,
       settings,
       onboarding,
+      user,
+      authLoading,
+      syncError,
+      login,
+      signup,
+      logout,
       setRoutine,
       setSettings,
       addTask,
@@ -136,7 +228,7 @@ export function TasksProvider({ children }) {
       resetOnboarding,
       loaded,
     }),
-    [tasks, events, routine, settings, onboarding, loaded]
+    [tasks, events, routine, settings, onboarding, user, authLoading, syncError, loaded]
   )
 
   return <TasksContext.Provider value={value}>{children}</TasksContext.Provider>

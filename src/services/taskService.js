@@ -6,7 +6,7 @@
  * >>> PONTO DE INTEGRAÇÃO FUTURA <<<
  */
 
-const KEYS = {
+export const KEYS = {
   tasks: 'naoesquece.tasks.v1',
   events: 'naoesquece.events.v1',
   routine: 'naoesquece.routine.v1',
@@ -225,6 +225,25 @@ export const taskService = {
   listContextTasks(context) {
     if (!context) return []
     return this.listTasks().filter((t) => t.status === 'pending' && t.context === context)
+  },
+
+  // ---------- Sincronização (export/import do conjunto completo) ----------
+  dump() {
+    return {
+      tasks: this.listTasks(),
+      events: this.listEvents(),
+      routine: this.listRoutine(),
+      settings: this.getSettings(),
+      onboarding: this.getOnboarding(),
+    }
+  },
+  restore(data) {
+    if (!data) return
+    if (Array.isArray(data.tasks)) write(KEYS.tasks, data.tasks)
+    if (Array.isArray(data.events)) write(KEYS.events, data.events)
+    if (data.routine && typeof data.routine === 'object') write(KEYS.routine, data.routine)
+    if (data.settings && typeof data.settings === 'object') write(KEYS.settings, data.settings)
+    return data
   },
 }
 

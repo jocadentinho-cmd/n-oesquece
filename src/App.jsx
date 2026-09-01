@@ -11,6 +11,7 @@ import Toasts from './components/Toasts'
 import FocusMode from './components/FocusMode'
 import ReminderScheduler from './components/ReminderScheduler'
 import Onboarding from './components/Onboarding'
+import Login from './components/Login'
 
 import Hoje from './pages/Hoje'
 import Tarefas from './pages/Tarefas'
@@ -20,8 +21,28 @@ import Configuracoes from './pages/Configuracoes'
 import Calendario from './pages/Calendario'
 import NotFound from './pages/NotFound'
 
+function LoadingScreen() {
+  return (
+    <div className="login">
+      <div className="login__card">
+        <div className="login__logo" aria-hidden="true">🧠</div>
+        <h1 className="login__title">NÃO ESQUECE</h1>
+        <p className="login__sub">Carregando...</p>
+      </div>
+    </div>
+  )
+}
+
 function AppContent() {
-  const { loaded, onboarding } = useTasks()
+  const { loaded, onboarding, authLoading, user } = useTasks()
+
+  if (authLoading) {
+    return <LoadingScreen />
+  }
+
+  if (!user) {
+    return <Login />
+  }
 
   if (!loaded || onboarding === null) {
     return <Onboarding />

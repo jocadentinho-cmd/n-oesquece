@@ -7,9 +7,10 @@ import {
   requestPermission,
   showNotification,
 } from '../services/notificationService'
+import { syncService } from '../services/syncService'
 
 export default function Configuracoes() {
-  const { settings, setSettings, events } = useTasks()
+  const { settings, setSettings, events, user, logout, syncError } = useTasks()
   const { toast } = useUI()
   const [notif, setNotif] = useState(settings.notifications !== false)
   const [perm, setPerm] = useState('unsupported')
@@ -41,13 +42,22 @@ export default function Configuracoes() {
   }
 
   const clearAll = () => {
-    if (window.confirm('Apagar todos os dados (tarefas, eventos e rotinas)? Isso não tem volta.')) {
+    if (window.confirm('Apagar todos os dados (tarefas, eventos e rotinas)? Isso não tem volta e também apaga da nuvem.')) {
       localStorage.removeItem('naoesquece.tasks.v1')
       localStorage.removeItem('naoesquece.events.v1')
       localStorage.removeItem('naoesquece.routine.v1')
       localStorage.removeItem('naoesquece.settings.v1')
+      if (user) {
+        // apaga também da nuvem: zera o payload e recarrega
+        syncService.push(user.id)
+      }
       window.location.reload()
     }
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    toast('Você saiu. Até já! 👋')
   }
 
   const permStatus = {
@@ -128,10 +138,32 @@ export default function Configuracoes() {
       </section>
 
       <section className="settings-group">
+        <h2 className="settings-group__title">Conta e sincronização</h2>
+        <div className="notification-panel">
+          <div className="setting-row">
+            <div>
+              <strong>Seus dados</strong>
+              <p className="page__sub" style={{ margin: 0 }}>
+                {user && user.email ? (
+                  <>Logado como <strong>{user.email}</strong>. Tudo é sincronizado na nuvem 🌥️ e segue você no celular e no computador.</>
+                ) : (
+                  'Você está offline.'
+                )}
+              </p>
+              {syncError && <p className="field-hint" style={{ color: 'var(--warning)', margin: '4px 0 0' }}>{syncError}</p>}
+            </div>
+          </div>
+          <button className="btn-ghost btn-block" style={{ marginTop: 12 }} onClick={handleLogout}>
+            Sair da conta
+          </button>
+        </div>
+      </section>
+
+      <section className="settings-group">
         <h2 className="settings-group__title">Privacidade</h2>
         <div className="notification-panel">
           <p className="page__sub" style={{ marginBottom: 12 }}>
-            Seus dados ficam salvos só no seu navegador.
+            Seus dados são sincronizados na nuvem usando sua conta. Cada pessoa só vê os próprios dados.
           </p>
           <button className="btn-text" style={{ color: 'var(--danger)' }} onClick={clearAll}>
             🗑 Apagar todos os dados
@@ -145,7 +177,7 @@ export default function Configuracoes() {
           <strong style={{ display: 'block' }}>NÃO ESQUECE</strong>
           <p className="page__sub">Você não precisa lembrar de tudo. Eu lembro por você.</p>
           <p className="page__sub" style={{ marginTop: 8, color: 'var(--text-3)' }}>
-            v1.0 · Seus dados ficam salvos só no seu navegador.
+            v1.1 · Seus dados viajam com você: celular e computador no mesmo login.
           </p>
         </div>
       </section>
