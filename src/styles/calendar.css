@@ -106,13 +106,15 @@
   position: absolute;
   top: 4px;
   right: 4px;
-  width: 8px;
-  height: 8px;
-  min-width: 8px;
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
   border-radius: 50%;
-  background: var(--danger);
-  box-shadow: 0 0 0 2px var(--surface);
+  background: #ff3b4e;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 2px rgba(255, 59, 78, 0.6);
   pointer-events: none;
+  z-index: 2;
 }
 
 .cal-day__num {
