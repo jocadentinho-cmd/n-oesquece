@@ -1,6 +1,18 @@
 import { useState } from 'react'
 import { useTasks } from '../context/TasksContext'
 
+function extractError(err) {
+  if (typeof err === 'string') return err
+  if (err && err.message) {
+    const m = String(err.message)
+    if (/invalid login credentials|invalid_credentials/i.test(m)) return 'Email ou senha incorretos.'
+    if (/already registered/i.test(m)) return 'Esse email já tem conta. Tenta entrar.'
+    if (/not confirmed|email.*confirm/i.test(m)) return 'Confirma o email que te enviamos antes de entrar. 📧'
+    return m
+  }
+  return 'Algo deu errado. Tenta de novo.'
+}
+
 export default function Login() {
   const { login, signup, syncError } = useTasks()
   const [mode, setMode] = useState('login')
@@ -21,13 +33,14 @@ export default function Login() {
     setBusy(true)
     if (mode === 'login') {
       const { error } = await login(email, password)
-      if (error) setError(error)
+      setBusy(false)
+      if (error) setError(extractError(error))
       else setDone('Entrando...')
     } else {
       const { error, data } = await signup(email, password)
       setBusy(false)
       if (error) {
-        setError(error)
+        setError(extractError(error))
       } else if (data && data.user && !data.session) {
         setDone('Conta criada! Confirma o email que te enviamos pra entrar. 📧')
       } else {
@@ -35,7 +48,6 @@ export default function Login() {
       }
       return
     }
-    setBusy(false)
   }
 
   return (

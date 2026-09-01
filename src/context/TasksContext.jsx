@@ -6,6 +6,12 @@ import { generateProfile } from '../services/onboardingService'
 
 const TasksContext = createContext(null)
 
+function errText(err) {
+  if (typeof err === 'string') return err
+  if (err && err.message) return String(err.message)
+  return 'Algo deu errado.'
+}
+
 export function TasksProvider({ children }) {
   const [tasks, setTasks] = useState([])
   const [events, setEvents] = useState([])
@@ -102,8 +108,8 @@ export function TasksProvider({ children }) {
     setSyncError('')
     const { error } = await authService.signIn(email, password)
     if (error) {
-      setSyncError('Email ou senha incorretos.')
-      return { error }
+      setSyncError(errText(error))
+      return { error: errText(error) }
     }
     return { error: null }
   }
@@ -113,7 +119,7 @@ export function TasksProvider({ children }) {
     const { data, error } = await authService.signUp(email, password)
     if (error) {
       setSyncError('Não deu pra criar a conta.')
-      return { error }
+      return { error: 'Não deu pra criar a conta.' }
     }
     return { data, error: null }
   }
