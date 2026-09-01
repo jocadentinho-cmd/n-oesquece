@@ -362,6 +362,18 @@
   padding: 18px;
 }
 
+.notification-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.perm-status {
+  font-weight: 600;
+  color: var(--text-2);
+}
+
 /* ============ Focus mode ============ */
 .focus {
   position: fixed;

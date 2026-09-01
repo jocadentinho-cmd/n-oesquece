@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useUI } from '../context/UIContext'
 import { useTasks } from '../context/TasksContext'
 import { EVENT_COLORS } from '../config/taskTypes'
+import { REMINDER_OPTIONS, requestPermission, canNotify } from '../services/notificationService'
 
 export default function EventModal() {
   const { eventModalOpen, eventModalDate, eventModalEvent, closeEventModal, toast } = useUI()
@@ -14,6 +15,7 @@ export default function EventModal() {
   const [location, setLocation] = useState('')
   const [description, setDescription] = useState('')
   const [color, setColor] = useState('primary')
+  const [reminder, setReminder] = useState('')
 
   const titleRef = useRef(null)
 
@@ -27,6 +29,7 @@ export default function EventModal() {
         setLocation(eventModalEvent.location || '')
         setDescription(eventModalEvent.description || '')
         setColor(eventModalEvent.color || 'primary')
+        setReminder(eventModalEvent.reminder || '')
       } else {
         setTitle('')
         setDate(eventModalDate || '')
@@ -35,6 +38,7 @@ export default function EventModal() {
         setLocation('')
         setDescription('')
         setColor('primary')
+        setReminder('')
       }
       setTimeout(() => titleRef.current && titleRef.current.focus(), 60)
     }
@@ -67,15 +71,44 @@ export default function EventModal() {
       location: location.trim() || null,
       description: description.trim() || null,
       color,
+      reminder: reminder || null,
     }
     if (isEditing) {
-      updateEvent(eventModalEvent.id, payload)
+      const patch = { ...payload }
+      if (eventModalEvent.reminder !== reminder) patch.reminderSent = false
+      updateEvent(eventModalEvent.id, patch)
       toast('Evento atualizado! ✏️')
     } else {
       addEvent(payload)
-      toast('Evento salvo! 📅')
+      toast(reminder && canNotify() ? 'Evento salvo! Vou te avisar. ⏰' : 'Evento salvo! 📅')
     }
     closeEventModal()
+  }
+
+  const handleReminderChange = async (key) => {
+    if (!key) {
+      setReminder('')
+      return
+    }
+    if (!('Notification' in window)) {
+      toast('Seu navegador não suporta notificações.', 'warning')
+      return
+    }
+    const perm = Notification.permission
+    if (perm === 'default') {
+      const result = await requestPermission()
+      if (result !== 'granted') {
+        toast('Sem problema. Ative depois nas Configurações.', 'warning')
+        setReminder('')
+        return
+      }
+      toast('Lembretes liberados! ⏰')
+    } else if (perm !== 'granted') {
+      toast('Permissão de notificação está bloqueada nas Configurações.', 'warning')
+      setReminder('')
+      return
+    }
+    setReminder(key)
   }
 
   const handleDelete = () => {
@@ -170,6 +203,34 @@ export default function EventModal() {
                 />
               ))}
             </div>
+          </fieldset>
+
+          <fieldset className="form-field">
+            <legend className="field-label">🔔 Lembrete (notificação)</legend>
+            <div className="cell-row reminder-row">
+              <button
+                type="button"
+                className={'cell' + (reminder === '' ? ' is-active' : '')}
+                onClick={() => setReminder('')}
+              >
+                Sem lembrete
+              </button>
+              {REMINDER_OPTIONS.map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  className={'cell' + (reminder === o.key ? ' is-active' : '')}
+                  onClick={() => handleReminderChange(o.key)}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            {reminder && !canNotify() && (
+              <p className="field-hint" style={{ color: 'var(--warning)' }}>
+                As notificações estão desativadas. Ative no navegador ou nas Configurações.
+              </p>
+            )}
           </fieldset>
 
           <fieldset className="form-field">

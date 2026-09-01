@@ -9,6 +9,7 @@ import EventModal from './components/EventModal'
 import ForgotModal from './components/ForgotModal'
 import Toasts from './components/Toasts'
 import FocusMode from './components/FocusMode'
+import ReminderScheduler from './components/ReminderScheduler'
 
 import Hoje from './pages/Hoje'
 import Tarefas from './pages/Tarefas'
@@ -43,6 +44,7 @@ export default function App() {
             <ForgotModal />
             <Toasts />
             <FocusMode />
+            <ReminderScheduler />
           </div>
         </BrowserRouter>
       </UIProvider>

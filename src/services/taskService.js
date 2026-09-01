@@ -137,6 +137,8 @@ export const taskService = {
       location: data.location || null,
       color: data.color || 'primary',
       allDay: data.allDay !== false,
+      reminder: data.reminder || null,
+      reminderSent: false,
       createdAt: new Date().toISOString(),
     }
     events.push(event)

@@ -4,6 +4,7 @@ import { useUI } from '../context/UIContext'
 import LoadingState from '../components/LoadingState'
 import EmptyState from '../components/EmptyState'
 import { eventColor } from '../config/taskTypes'
+import { formatReminderLabel } from '../services/notificationService'
 import {
   todayISO,
   buildMonthGrid,
@@ -132,8 +133,9 @@ export default function Calendario() {
                       (c.inMonth ? '' : ' is-muted')
                     }
                     onClick={() => handleDayClick(c.iso, c.inMonth)}
-                    aria-label={`Dia ${c.day}`}
+                    aria-label={dayEvts.length > 0 ? `Dia ${c.day}, ${dayEvts.length} evento(s)` : `Dia ${c.day}`}
                   >
+                    {dayEvts.length > 0 && <span className="cal-day__badge" aria-hidden="true" />}
                     <span className="cal-day__num">{c.day}</span>
                     <div className="cal-day__dots">
                       {dayEvts.slice(0, 3).map((e) => (
@@ -181,6 +183,9 @@ export default function Calendario() {
                           {e.allDay ? 'Dia inteiro' : (e.time || '')}
                           {e.location ? ` · ${e.location}` : ''}
                         </span>
+                        {e.reminder && (
+                          <span className="event-reminder-badge">🔔 {formatReminderLabel(e.reminder)}</span>
+                        )}
                       </div>
                       <button
                         className="icon-btn"
